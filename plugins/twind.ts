@@ -1,12 +1,19 @@
 import { virtualSheet } from "twind/sheets";
+import { setup, tw } from "twind";
 import { Plugin } from "../server.ts";
 
-import { Options, setup, STYLE_ELEMENT_ID } from "./twind/shared.ts";
+import { Options, STYLE_ELEMENT_ID } from "./twind/shared.ts";
+import { extractCssClasses } from "./plugin_utils.ts";
 export type { Options };
 
 export default function twind(options: Options): Plugin {
   const sheet = virtualSheet();
-  setup(options, sheet);
+  setup({
+    ...options,
+    mode: "silent",
+    sheet,
+  });
+
   const main = `data:application/javascript,import hydrate from "${
     new URL("./twind/main.ts", import.meta.url).href
   }";
@@ -16,10 +23,14 @@ export default function(state) { hydrate(options, state); }`;
     name: "twind",
     entrypoints: { "main": main },
     async renderAsync(ctx) {
-      sheet.reset(undefined);
       const res = await ctx.renderAsync();
+      sheet.reset(undefined);
+      const { classNames, html } = extractCssClasses(res.htmlText);
+      tw(classNames);
+
       const cssTexts = [...sheet.target];
       const snapshot = sheet.reset();
+
       const scripts = [];
       let cssText: string;
       if (res.requiresHydration) {
@@ -42,6 +53,7 @@ export default function(state) { hydrate(options, state); }`;
         cssText = cssTexts.join("\n");
       }
       return {
+        bodyHtml: html,
         scripts,
         styles: [{ cssText, id: STYLE_ELEMENT_ID }],
       };
