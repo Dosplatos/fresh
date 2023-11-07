@@ -599,6 +599,8 @@ export interface PluginRenderResult {
   styles?: PluginRenderStyleTag[];
   /** JS scripts to ship to the client. */
   scripts?: PluginRenderScripts[];
+  /** Body HTML transformed by the plugin */
+  htmlText?: string;
 }
 
 export interface PluginRenderStyleTag {
